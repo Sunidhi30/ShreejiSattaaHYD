@@ -223,7 +223,30 @@ router.get('/numbers', async (req, res) => {
     res.status(500).json({ message: 'Failed to get numbers', error: error.message });
   }
 });
+// Admin: Update Number
+router.put('/numbers/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { value, title, description, isActive } = req.body;
 
+    const number = await Number.findByIdAndUpdate(
+      id,
+      { value, title, description, isActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!number) {
+      return res.status(404).json({ message: 'Number not found' });
+    }
+
+    res.json({
+      message: 'Number updated successfully',
+      number
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update number', error: error.message });
+  }
+});
 // // router.get('/admin-earnings',adminAuth, async (req, res) => {
 // //   try {
 // //     // ✅ Sum all bet amounts from Bet collection
