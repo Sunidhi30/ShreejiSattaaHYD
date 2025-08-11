@@ -3,8 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const db = require('./utils/db')
 const app = express();
+require('dotenv').config()
+
 // const ResultScheduler = require('./utils/resultScheduler');
 const adminRoutes = require("./routes/admin")
+const authRoutes = require("./routes/auth")
+const userRoutes = require("./routes/user")
 
 app.use(express.json());
 // app.use(cors({
@@ -20,7 +24,6 @@ app.use(cors({
   credentials: true,
   maxAge: 600
 }));
-require('dotenv').config()
 db();
 db().then(function (db) {
   console.log(`Db connnected`)
@@ -30,6 +33,10 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+
+
 app.get("/testing", (req, res) => {
   res.sendFile(__dirname + "/testingpayement.html");
 })

@@ -9,6 +9,7 @@ const router = express.Router();
 const cloudinary = require("../utils/cloudinary")
 const { adminAuth } = require('../middleware/auth');
 const Number = require("../models/Number")
+const AppSettings = require("../models/AppSettings")
 const upload= require("../utils/upload")
 const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
@@ -245,6 +246,84 @@ router.put('/numbers/:id', adminAuth, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update number', error: error.message });
+  }
+});
+// Admin: Delete Number
+router.delete('/numbers/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const number = await Number.findByIdAndDelete(id);
+
+    if (!number) {
+      return res.status(404).json({ message: 'Number not found' });
+    }
+
+    res.json({
+      message: 'Number deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete number', error: error.message });
+  }
+});
+router.post('/settings/rate',  adminAuth, async (req, res) => {
+  try {
+    const { ratePerMinute } = req.body;
+
+    let setting = await AppSettings.findOne({ settingName: 'ratePerMinute' });
+
+    if (setting) {
+      setting.settingValue = ratePerMinute;
+      setting.updatedBy = req.admin.adminId;
+    } else {
+      setting = new AppSettings({
+        settingName: 'ratePerMinute',
+        settingValue: ratePerMinute,
+        description: 'Rate per minute for user sessions',
+        updatedBy: req.admin.adminId
+      });
+    }
+
+    await setting.save();
+
+    res.json({
+      message: 'Rate updated successfully',
+      ratePerMinute: setting.settingValue
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update rate', error: error.message });
+  }
+});
+// Admin: Get All Users
+router.get('/all-users',  adminAuth, async (req, res) => {
+  try {
+    const users = await User.find({ role: 'user' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      message: 'Users retrieved successfully',
+      users
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to retrieve users', error: error.message });
+  }
+});
+// Admin: Get User Sessions
+router.get('/admin/users/:userId/sessions',  adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const sessions = await UserSession.find({ userId })
+      .populate('userId', 'username email')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      message: 'User sessions retrieved successfully',
+      sessions
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to retrieve sessions', error: error.message });
   }
 });
 // // router.get('/admin-earnings',adminAuth, async (req, res) => {

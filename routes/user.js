@@ -3,23 +3,17 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const Game = require('../models/Game');
-const Bet = require('../models/Bet');
 const Transaction = require('../models/Transaction');
-const Result = require('../models/Result');
-const HardGame = require('../models/HardGame');
-const GameRate = require('../models/GameRate');
-const GameWin = require("../models/GameWin")
-const Settings = require('../models/Settings');
 const Admin = require('../models/Admin');
 const upload= require("../utils/upload")
 const cloudinary = require("../utils/cloudinary")
 const mongoose = require('mongoose');
-const Notice = require("../models/Notice")
+const Notice = require("../models/Notice");
+const Number = require("../models/Number")
 const moment = require('moment-timezone');
-const AdminSetting = require('../models/AdminSetting');
 const streamifier = require('streamifier');
-const  ASettings = require("../models/AdminSetting")
+require('dotenv').config()
+
 // JWT Authentication Middleware
 const authMiddleware = async (req, res, next) => {
     try {
@@ -29,7 +23,7 @@ const authMiddleware = async (req, res, next) => {
           return res.status(401).json({ message: 'No token provided' });
         }
     
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Apple');
         const user = await User.findById(decoded.userId);
         
         if (!user) {
@@ -59,7 +53,7 @@ const uploadToCloudinary = (fileBuffer) => {
       });
 };
 // Update User Details API (with profile image upload)
-router.put('/update',  authMiddleware,upload.single('profileImage'), async (req, res) => {
+router.put('/update',  authMiddleware , upload.single('profileImage'), async (req, res) => {
   try {
     const userId =req.user._id
     const {
@@ -113,65 +107,23 @@ router.put('/update',  authMiddleware,upload.single('profileImage'), async (req,
     res.status(500).json({ message: 'Server error while updating user' });
   }
 });
-// Get Home Dashboard Data
-router.get('/dashboard', authMiddleware, async (req, res) => {
+// get numbers uploaded by the admin
+router.get('/numbers', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const numbers = await Number.find()
+      .populate('createdBy', 'name email') // optional: get admin details
+      .sort({ createdAt: -1 }); // latest first
 
-    // Get today's results
-    const todayResults = await Result.find({
-      date: { $gte: today }
-    }).populate('gameId').sort({ declaredAt: -1 }).limit(5);
-
-    // Get user's recent bets
-    const recentBets = await Bet.find({ user: req.user._id })
-      .populate('game')
-      .sort({ createdAt: -1 })
-      .limit(5);
-
-    // Get user's today's activities
-    const todayTransactions = await Transaction.find({
-      user: req.user._id,
-      createdAt: { $gte: today }
-    }).sort({ createdAt: -1 });
-
-    // Get active games
-    const activeGames = await Game.find({ status: 'active' })
-      .sort({ createdAt: -1 })
-      .limit(10);
-
-    // Calculate statistics
-    const totalBets = await Bet.countDocuments({ user: req.user._id });
-    const totalWins = await Bet.countDocuments({ 
-      user: req.user._id, 
-      status: 'won' 
-    });
-
-    res.json({
-      message: 'Dashboard data retrieved successfully',
-      data: {
-        user: {
-          name: req.user.username,
-          balance: req.user.wallet.balance,
-          totalWinnings: req.user.wallet.totalWinnings,
-          referralCode: req.user.referralCode
-        },
-        todayResults,
-        recentBets,
-        todayTransactions,
-        activeGames,
-        statistics: {
-          totalBets,
-          totalWins,
-          winPercentage: totalBets > 0 ? ((totalWins / totalBets) * 100).toFixed(2) : 0
-        }
-      }
+    res.status(200).json({
+      success: true,
+      count: numbers.length,
+      numbers
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Failed to get numbers', error: error.message });
   }
 });
+
 // // Get Today's Lucky Number
 // router.get('/testing-today-number', authMiddleware, async (req, res) => {
 //   try {
