@@ -11,6 +11,8 @@ const { adminAuth } = require('../middleware/auth');
 const Number = require("../models/Number")
 const AppSettings = require("../models/AppSettings")
 const upload= require("../utils/upload")
+
+const Blog = require("../models/Blog")
 const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -136,6 +138,128 @@ router.post('/login', async (req, res) => {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+// 📌 Create Blog (Admin Only)
+router.post('/blogs', adminAuth, upload.single('image'), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title || !description || !req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title, description, and image are required'
+      });
+    }
+
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload_stream(
+      { folder: 'blogs' },
+      async (error, uploadResult) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          return res.status(500).json({ success: false, message: 'Image upload failed' });
+        }
+
+        // Create Blog entry in DB
+        const blog = new Blog({
+          title,
+          description,
+          image: uploadResult.secure_url,
+          createdBy: req.admin._id
+        });
+
+        await blog.save();
+
+        res.status(201).json({
+          success: true,
+          message: 'Blog created successfully',
+          blog
+        });
+      }
+    );
+
+    // Pipe the file buffer to Cloudinary
+    require('streamifier').createReadStream(req.file.buffer).pipe(result);
+
+  } catch (error) {
+    console.error('Error creating blog:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+// 📌 Mark Blog as Top (Admin Only)
+router.put('/blogs/:id/top', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isTop } = req.body; // true or false
+
+    // Ensure only max 5 blogs can be top at the same time
+    if (isTop) {
+      const topCount = await Blog.countDocuments({ isTop: true });
+      if (topCount >= 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'You can only have 5 top blogs at a time'
+        });
+      }
+    }
+
+    const blog = await Blog.findByIdAndUpdate(
+      id,
+      { isTop },
+      { new: true }
+    );
+
+    if (!blog) {
+      return res.status(404).json({ success: false, message: 'Blog not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Blog updated successfully. isTop = ${isTop}`,
+      blog
+    });
+
+  } catch (error) {
+    console.error('Error updating blog:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+// 📌 Get All Blogs
+router.get('/blogs', async (req, res) => {
+  try {
+    const blogs = await Blog.find()
+      .populate('createdBy', 'username email profileImage') // show admin details
+      .sort({ createdAt: -1 }); // latest first
+
+    res.status(200).json({
+      success: true,
+      blogs
+    });
+
+  } catch (error) {
+    console.error('Error fetching blogs:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+// 📌 Get Top 5 Blogs
+router.get('/blogs/top', async (req, res) => {
+  try {
+    const blogs = await Blog.find({ isTop: true }) // only top blogs
+      .populate('createdBy', 'username email profileImage') // include admin info
+      .sort({ createdAt: -1 }) // latest first
+      .limit(5); // limit to top 5
+
+    res.status(200).json({
+      success: true,
+      count: blogs.length,
+      blogs
+    });
+
+  } catch (error) {
+    console.error('Error fetching top blogs:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // Change Password
 router.post('/change-password', adminAuth, async (req, res) => {
   try {

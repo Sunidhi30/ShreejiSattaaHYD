@@ -8,9 +8,8 @@ const Question = require('../models/Question');
 const { adminAuth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
-
+const cloudinary = require("../utils/cloudinary")
 // ============ TOURNAMENT ROUTES ============
-
 // GET /api/tournaments - Get all tournaments (Public)
 router.get('/tournaments', async (req, res) => {
   try {
@@ -76,7 +75,6 @@ router.post('/tournaments', adminAuth, async (req, res) => {
     });
   }
 });
-
 // PUT /api/tournaments/:id - Update tournament (Admin only)
 router.put('/tournaments/:id', adminAuth, async (req, res) => {
   try {
@@ -109,7 +107,6 @@ router.put('/tournaments/:id', adminAuth, async (req, res) => {
     });
   }
 });
-
 // DELETE /api/tournaments/:id - Delete tournament (Admin only)
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
@@ -140,9 +137,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
     });
   }
 });
-
 // ============ MATCH ROUTES ============
-
 // GET /api/tournaments/:tournamentId/matches - Get matches for tournament
 router.get('/:tournamentId/matches', async (req, res) => {
   try {
@@ -168,76 +163,88 @@ router.get('/:tournamentId/matches', async (req, res) => {
     });
   }
 });
-
 // POST /api/tournaments/:tournamentId/matches - Create match (Admin only)
-router.post('/:tournamentId/matches', adminAuth, upload.fields([
-  { name: 'team1Logo', maxCount: 1 },
-  { name: 'team2Logo', maxCount: 1 }
-]), async (req, res) => {
-  try {
-    const { tournamentId } = req.params;
-    const { 
-      team1Name, 
-      team2Name, 
-      matchDate, 
-      venue, 
-      matchType 
-    } = req.body;
-
-    // Validation
-    if (!team1Name || !team2Name || !matchDate || !venue || !matchType) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
+router.post(
+    '/:tournamentId/matches',
+    adminAuth,
+    upload.fields([
+      { name: 'team1Logo', maxCount: 1 },
+      { name: 'team2Logo', maxCount: 1 }
+    ]),
+    async (req, res) => {
+      try {
+        const { tournamentId } = req.params;
+        const { team1Name, team2Name, matchDate, venue, matchType } = req.body;
+  
+        // Validation
+        if (!team1Name || !team2Name || !matchDate || !venue || !matchType) {
+          return res.status(400).json({
+            success: false,
+            message: 'All fields are required'
+          });
+        }
+  
+        // Check if tournament exists
+        const tournament = await Tournament.findById(tournamentId);
+        if (!tournament) {
+          return res.status(404).json({
+            success: false,
+            message: 'Tournament not found'
+          });
+        }
+  
+        // Upload to Cloudinary
+        let team1LogoUrl = '';
+        let team2LogoUrl = '';
+  
+        if (req.files?.team1Logo) {
+          const result1 = await cloudinary.uploader.upload(req.files.team1Logo[0].path, {
+            folder: 'tournaments/team-logos'
+          });
+          team1LogoUrl = result1.secure_url;
+        }
+  
+        if (req.files?.team2Logo) {
+          const result2 = await cloudinary.uploader.upload(req.files.team2Logo[0].path, {
+            folder: 'tournaments/team-logos'
+          });
+          team2LogoUrl = result2.secure_url;
+        }
+  
+        // Create match
+        const match = new Match({
+          tournamentId,
+          team1: {
+            name: team1Name,
+            logo: team1LogoUrl
+          },
+          team2: {
+            name: team2Name,
+            logo: team2LogoUrl
+          },
+          matchDate: new Date(matchDate),
+          venue,
+          matchType,
+          createdBy: req.admin._id
+        });
+  
+        await match.save();
+        await match.populate('tournamentId', 'name');
+  
+        res.status(201).json({
+          success: true,
+          data: match,
+          message: 'Match created successfully'
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: 'Error creating match',
+          error: error.message
+        });
+      }
     }
-
-    // Check if tournament exists
-    const tournament = await Tournament.findById(tournamentId);
-    if (!tournament) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tournament not found'
-      });
-    }
-
-    // Handle file uploads (you'll need to implement file upload logic)
-    const team1Logo = req.files?.team1Logo ? req.files.team1Logo[0].path : '';
-    const team2Logo = req.files?.team2Logo ? req.files.team2Logo[0].path : '';
-
-    const match = new Match({
-      tournamentId,
-      team1: {
-        name: team1Name,
-        logo: team1Logo
-      },
-      team2: {
-        name: team2Name,
-        logo: team2Logo
-      },
-      matchDate: new Date(matchDate),
-      venue,
-      matchType,
-      createdBy: req.admin._id
-    });
-
-    await match.save();
-    await match.populate('tournamentId', 'name');
-
-    res.status(201).json({
-      success: true,
-      data: match,
-      message: 'Match created successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error creating match',
-      error: error.message
-    });
-  }
-});
-
+);
 // PUT /api/tournaments/:tournamentId/matches/:matchId - Update match (Admin only)
 router.put('/:tournamentId/matches/:matchId', adminAuth, async (req, res) => {
   try {
@@ -270,9 +277,7 @@ router.put('/:tournamentId/matches/:matchId', adminAuth, async (req, res) => {
     });
   }
 });
-
 // ============ QUESTION ROUTES ============
-
 // GET /api/tournaments/:tournamentId/matches/:matchId/questions - Get questions for match
 router.get('/:tournamentId/matches/:matchId/questions', async (req, res) => {
   try {
@@ -304,7 +309,6 @@ router.get('/:tournamentId/matches/:matchId/questions', async (req, res) => {
     });
   }
 });
-
 // POST /api/tournaments/:tournamentId/matches/:matchId/questions - Create question (Admin only)
 router.post('/:tournamentId/matches/:matchId/questions', adminAuth, async (req, res) => {
   try {
@@ -357,7 +361,6 @@ router.post('/:tournamentId/matches/:matchId/questions', adminAuth, async (req, 
     });
   }
 });
-
 // PUT /api/tournaments/:tournamentId/matches/:matchId/questions/:questionId - Update question (Admin only)
 router.put('/:tournamentId/matches/:matchId/questions/:questionId', adminAuth, async (req, res) => {
   try {
@@ -393,7 +396,6 @@ router.put('/:tournamentId/matches/:matchId/questions/:questionId', adminAuth, a
     });
   }
 });
-
 // POST /api/tournaments/:tournamentId/matches/:matchId/questions/:questionId/answer - Set correct answer (Admin only)
 router.post('/:tournamentId/matches/:matchId/questions/:questionId/answer', adminAuth, async (req, res) => {
   try {
@@ -451,5 +453,76 @@ router.post('/:tournamentId/matches/:matchId/questions/:questionId/answer', admi
     });
   }
 });
-
+router.post('/options/:tournamentId/matches/:matchId/questions/:questionId/answer', adminAuth, async (req, res) => {
+    try {
+      const { questionId } = req.params;
+      const { optionId } = req.body; // we'll pass optionId instead of correctAnswer text
+  
+      if (!optionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Option ID for correct answer is required'
+        });
+      }
+  
+      // Find the question
+      const question = await Question.findById(questionId);
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found'
+        });
+      }
+  
+      // Check if option exists in question
+      const selectedOption = question.options.id(optionId);
+      if (!selectedOption) {
+        return res.status(404).json({
+          success: false,
+          message: 'Option not found in this question'
+        });
+      }
+  
+      // Set all options isCorrect = false, then set the correct one to true
+      question.options.forEach(opt => {
+        opt.isCorrect = opt._id.toString() === optionId;
+      });
+  
+      // Save correctAnswer as the text of the chosen option
+      question.correctAnswer = selectedOption.optionText;
+  
+      await question.save();
+  
+      // Update predictions
+      const Prediction = require('../models/Prediction');
+      await Prediction.updateMany(
+        { questionId },
+        [{
+          $set: {
+            isCorrect: { $eq: ['$selectedAnswer', selectedOption.optionText] },
+            points: {
+              $cond: {
+                if: { $eq: ['$selectedAnswer', selectedOption.optionText] },
+                then: 10,
+                else: 0
+              }
+            }
+          }
+        }]
+      );
+  
+      res.status(200).json({
+        success: true,
+        data: question,
+        message: 'Correct answer set successfully'
+      });
+  
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error setting correct answer',
+        error: error.message
+      });
+    }
+});
 module.exports = router;
