@@ -11,7 +11,7 @@ const { adminAuth } = require('../middleware/auth');
 const Number = require("../models/Number")
 const AppSettings = require("../models/AppSettings")
 const upload= require("../utils/upload")
-
+const Subscription = require("../models/Subscription")
 const Blog = require("../models/Blog")
 const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
@@ -290,7 +290,6 @@ router.get('/blogs/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
-
 // Change Password
 router.post('/change-password', adminAuth, async (req, res) => {
   try {
@@ -481,6 +480,69 @@ router.get('/admin/users/:userId/sessions',  adminAuth, async (req, res) => {
     res.status(500).json({ message: 'Failed to retrieve sessions', error: error.message });
   }
 });
+// 📌 Create Subscription Plan (Admin Only)
+router.post('/subscriptions', adminAuth, async (req, res) => {
+  try {
+    const { name, description, price, duration, features } = req.body;
+
+    // Validate required fields
+    if (!name || !description || !price || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, description, price, and duration are required'
+      });
+    }
+
+    // Create subscription
+    const subscription = new Subscription({
+      name,
+      description,
+      price,
+      duration,
+      features: features || [],
+      createdBy: req.admin._id // comes from adminAuth middleware
+    });
+
+    await subscription.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Subscription plan created successfully',
+      subscription
+    });
+
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+// 📌 Get All Subscription Plans
+router.get('/subscriptions', async (req, res) => {
+  try {
+    // Fetch only active plans (remove `.find({ isActive: true })` if you want all)
+    const subscriptions = await Subscription.find({ isActive: true })
+      .populate('createdBy', 'username email profileImage') // show admin details
+      .sort({ createdAt: -1 }); // latest first
+
+    res.status(200).json({
+      success: true,
+      count: subscriptions.length,
+      subscriptions
+    });
+
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
+
 // // router.get('/admin-earnings',adminAuth, async (req, res) => {
 // //   try {
 // //     // ✅ Sum all bet amounts from Bet collection
