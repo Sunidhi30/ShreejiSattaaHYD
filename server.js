@@ -10,6 +10,7 @@ const adminRoutes = require("./routes/admin")
 const authRoutes = require("./routes/auth")
 const userRoutes = require("./routes/user")
 const tournamentRoutes = require("./routes/tournament")
+const subscriptionRoutes = require("./routes/TestingSubscriptions")
 app.use(express.json());
 // app.use(cors({
 //   origin: true,
@@ -36,15 +37,14 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/tournament', tournamentRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 app.get("/testing", (req, res) => {
   res.sendFile(__dirname + "/testingpayement.html");
 })
-app.get("/Spinner", (req, res) => {
-  res.sendFile(__dirname + "/Spinner.html");
+app.get("/payements", (req, res) => {
+  res.sendFile(__dirname + "/TestingPayements.html");
 })
 app.get("/deposit", (req, res) => {
   res.sendFile(__dirname + "/manual-deposit.html");
 })
-
-
 

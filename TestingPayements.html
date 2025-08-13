@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Subscription API Tester</title>
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button, textarea, select { margin: 5px 0; width: 100%; padding: 5px; }
+    pre { background: #f5f5f5; padding: 10px; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<h1>Subscription API Tester</h1>
+
+<script>
+const API_BASE_URL = "http://localhost:9000/api/subscriptions"; // Change to your backend URL
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk5ZDMyMzBhMDRlODA0ZWQ5NzcyYTIiLCJpYXQiOjE3NTUwODUzOTAsImV4cCI6MTc1NTY5MDE5MH0.EJdLoZWRGq4EjS--zoXzuWRQV9iCnw2glXvcro4PYj8";
+
+async function callApi(endpoint, method = "GET", body = null) {
+    const options = {
+        method,
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + TOKEN
+        }
+    };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(API_BASE_URL + endpoint, options);
+    const data = await res.json();
+    document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+}
+
+// API buttons
+function getSubscriptions() {
+    callApi("/subscriptions");
+}
+
+function createOrder() {
+    const subscriptionId = document.getElementById("subscriptionId").value;
+    callApi("/subscriptions/create-order", "POST", { subscriptionId });
+}
+
+function verifyPayment() {
+    const payload = {
+        razorpay_payment_id: document.getElementById("paymentId").value,
+        razorpay_order_id: document.getElementById("orderId").value,
+        razorpay_signature: document.getElementById("signature").value,
+        subscriptionId: document.getElementById("verifySubscriptionId").value
+    };
+    callApi("/subscriptions/verify-payment", "POST", payload);
+}
+
+function getUserSubscriptions() {
+    callApi("/subscriptions/user");
+}
+
+function getTransactions() {
+    callApi("/subscriptions/transactions");
+}
+
+function cancelSubscription() {
+    const subscriptionId = document.getElementById("cancelSubscriptionId").value;
+    callApi("/subscriptions/cancel", "POST", { subscriptionId });
+}
+</script>
+
+<!-- Subscription List -->
+<h2>1. Get Active Subscriptions</h2>
+<button onclick="getSubscriptions()">Get Subscriptions</button>
+
+<!-- Create Order -->
+<h2>2. Create Order</h2>
+<input type="text" id="subscriptionId" placeholder="Enter Subscription ID">
+<button onclick="createOrder()">Create Razorpay Order</button>
+
+<!-- Verify Payment -->
+<h2>3. Verify Payment</h2>
+<input type="text" id="paymentId" placeholder="Razorpay Payment ID">
+<input type="text" id="orderId" placeholder="Razorpay Order ID">
+<input type="text" id="signature" placeholder="Razorpay Signature">
+<input type="text" id="verifySubscriptionId" placeholder="Subscription ID">
+<button onclick="verifyPayment()">Verify Payment</button>
+
+<!-- User Subscriptions -->
+<h2>4. Get User Subscriptions</h2>
+<button onclick="getUserSubscriptions()">Get My Subscriptions</button>
+
+<!-- Transactions -->
+<h2>5. Get Subscription Transactions</h2>
+<button onclick="getTransactions()">Get Transactions</button>
+
+<!-- Cancel Subscription -->
+<h2>6. Cancel Subscription</h2>
+<input type="text" id="cancelSubscriptionId" placeholder="Subscription ID to Cancel">
+<button onclick="cancelSubscription()">Cancel Subscription</button>
+
+<!-- Output -->
+<h2>API Response</h2>
+<pre id="output"></pre>
+
+</body>
+</html>

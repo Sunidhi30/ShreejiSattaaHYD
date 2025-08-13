@@ -1,5 +1,105 @@
+// const mongoose = require('mongoose');
+// const bcrypt = require('bcryptjs');
+// const userSchema = new mongoose.Schema({
+//   username: {
+//     type: String,
+//     required: true,
+//     unique: true,
+//     trim: true
+//   },
+//   email: {
+//     type: String,
+//     required: true,
+//     unique: true,
+//     lowercase: true
+//   },
+//   profileImage: {
+//     type: String,
+//     default: 'https://t3.ftcdn.net/jpg/09/48/09/30/360_F_948093078_6kRWXnAWFNEaakRMX5OM9CRNNj2gdIfw.jpg'   // default empty string
+//   },
+//   password: {
+//     type: String,
+//     required: false,
+//     minlength: 6
+//   },
+//   role: {
+//     type: String,
+//     enum: ['user', 'admin'],
+//     default: 'user'
+//   },
+//   depositScreenshots: [
+//     {
+//       url: String,
+//       transactionId: String,
+//       uploadedAt: {
+//         type: Date,
+//         default: Date.now
+//       }
+//     }
+//   ], 
+//   wallet: {
+//     balance: {
+//       type: Number,
+//       default: 0
+//     },
+   
+//     totalWithdrawals: {
+//       type: Number,
+//       default: 0
+//     },
+  
+//     commission: {
+//       type: Number,
+//       default: 0
+//     }
+//   },
+//   mobile: {
+//     type: Number,
+//     default: 0
+//   },
+//   totalMoney: {
+//     type: Number,
+//     default: 0
+//   },
+//   isActive: {
+//     type: Boolean,
+//     default: true
+//   },
+//   referralCode: {
+//     type: String,
+//     unique: true
+//   },
+//   referredBy: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'User'
+//   },
+//   currentSession: {
+//     loginTime: Date,
+//     isOnline: {
+//       type: Boolean,
+//       default: false
+//     }
+//   }
+// }, {
+//   timestamps: true
+// });
+
+// // Hash password before saving
+// userSchema.pre('save', async function(next) {
+//   if (!this.isModified('password')) return next();
+//   this.password = await bcrypt.hash(this.password, 12);
+//   next();
+// });
+
+// // Compare password method
+// userSchema.methods.comparePassword = async function(candidatePassword) {
+//   return await bcrypt.compare(candidatePassword, this.password);
+// };
+
+// module.exports = mongoose.model('User', userSchema);
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -15,7 +115,7 @@ const userSchema = new mongoose.Schema({
   },
   profileImage: {
     type: String,
-    default: 'https://t3.ftcdn.net/jpg/09/48/09/30/360_F_948093078_6kRWXnAWFNEaakRMX5OM9CRNNj2gdIfw.jpg'   // default empty string
+    default: 'https://t3.ftcdn.net/jpg/09/48/09/30/360_F_948093078_6kRWXnAWFNEaakRMX5OM9CRNNj2gdIfw.jpg'
   },
   password: {
     type: String,
@@ -36,18 +136,16 @@ const userSchema = new mongoose.Schema({
         default: Date.now
       }
     }
-  ], 
+  ],
   wallet: {
     balance: {
       type: Number,
       default: 0
     },
-   
     totalWithdrawals: {
       type: Number,
       default: 0
     },
-  
     commission: {
       type: Number,
       default: 0
@@ -79,7 +177,40 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     }
-  }
+  },
+  // Added subscriptions array
+  subscriptions: [
+    {
+      subscriptionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subscription',
+        required: true
+      },
+      subscriptionName: {
+        type: String,
+        required: true
+      },
+      purchaseDate: {
+        type: Date,
+        default: Date.now
+      },
+      expiryDate: {
+        type: Date,
+        required: true
+      },
+      isActive: {
+        type: Boolean,
+        default: true
+      },
+      paymentId: {
+        type: String,
+        required: true
+      },
+      cancelledDate: {
+        type: Date
+      }
+    }
+  ]
 }, {
   timestamps: true
 });

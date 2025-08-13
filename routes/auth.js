@@ -3,6 +3,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
+require('dotenv').config()
 const otpLoginStore = {}; // In-memory OTP store for login
 // Register
 const otpStore = {}; // Temporary in-memory store for OTPs
@@ -322,7 +323,7 @@ router.post('/login/verify-otp', async (req, res) => {
       // Generate JWT token
       const token = jwt.sign(
         { userId: user._id },
-        process.env.JWT_SECRET || 'your-secret-key',
+        process.env.JWT_SECRET || 'Apple',
         { expiresIn: '7d' }
       );
   
