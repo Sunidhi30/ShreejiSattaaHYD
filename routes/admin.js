@@ -259,6 +259,37 @@ router.get('/blogs/top', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+// 📌 Get Single Blog Details by ID
+router.get('/blogs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id)
+      .populate('createdBy', 'username email profileImage'); // show admin details
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blog not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      blog
+    });
+
+  } catch (error) {
+    console.error('Error fetching blog details:', error);
+
+    // If the ID format is invalid
+    if (error.name === 'CastError') {
+      return res.status(400).json({ success: false, message: 'Invalid blog ID format' });
+    }
+
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 // Change Password
 router.post('/change-password', adminAuth, async (req, res) => {
