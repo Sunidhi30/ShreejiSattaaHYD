@@ -9,7 +9,7 @@ require('dotenv').config()
 const adminRoutes = require("./routes/admin")
 const authRoutes = require("./routes/auth")
 const userRoutes = require("./routes/user")
-
+const tournamentRoutes = require("./routes/tournament")
 app.use(express.json());
 // app.use(cors({
 //   origin: true,
@@ -35,8 +35,7 @@ app.listen(PORT, () => {
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-
-
+app.use('/api/tournament', tournamentRoutes);
 app.get("/testing", (req, res) => {
   res.sendFile(__dirname + "/testingpayement.html");
 })

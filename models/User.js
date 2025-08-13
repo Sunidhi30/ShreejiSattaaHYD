@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -15,7 +14,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true
   },
   profileImage: {
-    type: String, // will store the image URL
+    type: String,
     default: 'https://t3.ftcdn.net/jpg/09/48/09/30/360_F_948093078_6kRWXnAWFNEaakRMX5OM9CRNNj2gdIfw.jpg'   // default empty string
   },
   password: {
@@ -28,6 +27,36 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  depositScreenshots: [
+    {
+      url: String,
+      transactionId: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ], 
+  wallet: {
+    balance: {
+      type: Number,
+      default: 0
+    },
+   
+    totalWithdrawals: {
+      type: Number,
+      default: 0
+    },
+  
+    commission: {
+      type: Number,
+      default: 0
+    }
+  },
+  mobile: {
+    type: Number,
+    default: 0
+  },
   totalMoney: {
     type: Number,
     default: 0
@@ -35,6 +64,14 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  referralCode: {
+    type: String,
+    unique: true
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   currentSession: {
     loginTime: Date,

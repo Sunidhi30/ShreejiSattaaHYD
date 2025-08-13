@@ -374,162 +374,156 @@ router.get('/admin/users/:userId/sessions',  adminAuth, async (req, res) => {
 //   }
 // });
 // //Route: Get total user count
-// router.get('/users-count', async (req, res) => {
-//     try {
-//       const userCount = await User.countDocuments();
-//       res.json({
-//         message: 'User count retrieved successfully',
-//         count: userCount
-//       });
-//     } catch (error) {
-//       console.error('Error fetching user count:', error);
-//       res.status(500).json({ message: 'Server error', error: error.message });
-//     }
-// });
-
-// // 2. USER MANAGEMENT
+router.get('/users-count', async (req, res) => {
+    try {
+      const userCount = await User.countDocuments();
+      res.json({
+        message: 'User count retrieved successfully',
+        count: userCount
+      });
+    } catch (error) {
+      console.error('Error fetching user count:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
 // // Get all users
-// router.get('/users', adminAuth, async (req, res) => {
-//   try {
-//     const { page = 1, limit = 10, search = '', sortBy = 'registrationDate', order = 'desc' } = req.query;
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', sortBy = 'registrationDate', order = 'desc' } = req.query;
     
-//     const query = search ? {
-//       $or: [
-//         { username: { $regex: search, $options: 'i' } },
-//         { email: { $regex: search, $options: 'i' } },
-//         { mobile: { $regex: search, $options: 'i' } }
-//       ]
-//     } : {};
+    const query = search ? {
+      $or: [
+        { username: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { mobile: { $regex: search, $options: 'i' } }
+      ]
+    } : {};
 
-//     const users = await User.find(query)
-//       .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
-//       .limit(limit * 1)
-//       .skip((page - 1) * limit)
-//       .select('-password');
+    const users = await User.find(query)
+      .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('-password');
 
-//     const total = await User.countDocuments(query);
+    const total = await User.countDocuments(query);
 
-//     res.json({
-//       success: true,
-//       users,
-//       pagination: {
-//         current: page,
-//         pages: Math.ceil(total / limit),
-//         total
-//       }
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// });
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 // // Get user details
-// router.get('/users/:id', adminAuth, async (req, res) => {
-//   try {
-//     const user = await User.findById(req.params.id)
-//       .select('-password')
-//       .populate('referredBy', 'username');
+router.get('/users/:id', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('-password')
+      .populate('referredBy', 'username');
 
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-//     // Get user's betting history
-//     const bets = await Bet.find({ userId: user._id })
-//       .populate('gameId', 'name')
-//       .sort({ date: -1 })
-//       .limit(10);
+    // Get user's betting history
+    const bets = await Bet.find({ userId: user._id })
+      .populate('gameId', 'name')
+      .sort({ date: -1 })
+      .limit(10);
 
-//     // Get user's transaction history
-//     const transactions = await Transaction.find({ userId: user._id })
-//       .sort({ createdAt: -1 })
-//       .limit(10);
+    // Get user's transaction history
+    const transactions = await Transaction.find({ userId: user._id })
+      .sort({ createdAt: -1 })
+      .limit(10);
 
-//     res.json({
-//       success: true,
-//       user,
-//       recentBets: bets,
-//       recentTransactions: transactions
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// });
+    res.json({
+      success: true,
+      user,
+      recentBets: bets,
+      recentTransactions: transactions
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 // // Block/Unblock user
-// router.patch('/users/:id/block', adminAuth, async (req, res) => {
-//   try {
-//     const { isBlocked } = req.body;
+router.patch('/users/:id/block', adminAuth, async (req, res) => {
+  try {
+    const { isBlocked } = req.body;
     
-//     const user = await User.findByIdAndUpdate(
-//       req.params.id,
-//       { isBlocked },
-//       { new: true }
-//     ).select('-password');
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlocked },
+      { new: true }
+    ).select('-password');
 
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-//     res.json({
-//       success: true,
-//       message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`,
-//       user
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// });
-
+    res.json({
+      success: true,
+      message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 // // Add/Update game rate
+router.delete('/user/:userId', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
 
-// router.delete('/user/:userId', adminAuth, async (req, res) => {
-//   try {
-//     const { userId } = req.params;
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-//     const user = await User.findByIdAndDelete(userId);
-//     if (!user) {
-//       return res.status(404).json({ success: false, message: 'User not found' });
-//     }
-
-//     res.status(200).json({ success: true, message: 'User deleted successfully' });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// });
-
-
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 // // 7. TRANSACTION MANAGEMENT
 // // Get withdrawal requests
-// router.get('/withdrawals', adminAuth, async (req, res) => {
-//   try {
-//     const { page = 1, limit = 10, status = 'pending' } = req.query;
+router.get('/withdrawals', adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status = 'pending' } = req.query;
     
-//     const withdrawals = await Transaction.find({
-//       type: 'withdrawal',
-//       status
-//     })
-//       .populate('userId', 'username mobile email')
-//       .sort({ createdAt: -1 })
-//       .limit(limit * 1)
-//       .skip((page - 1) * limit);
+    const withdrawals = await Transaction.find({
+      type: 'withdrawal',
+      status
+    })
+      .populate('userId', 'username mobile email')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
-//     const total = await Transaction.countDocuments({
-//       type: 'withdrawal',
-//       status
-//     });
+    const total = await Transaction.countDocuments({
+      type: 'withdrawal',
+      status
+    });
 
-//     res.json({
-//       success: true,
-//       withdrawals,
-//       pagination: {
-//         current: page,
-//         pages: Math.ceil(total / limit),
-//         total
-//       }
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// });
+    res.json({
+      success: true,
+      withdrawals,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 // // Process withdrawal
 // router.patch('/withdrawals/:id', adminAuth, async (req, res) => {
 //   try {
