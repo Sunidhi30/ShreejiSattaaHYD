@@ -48,3 +48,7 @@ app.get("/deposit", (req, res) => {
   res.sendFile(__dirname + "/manual-deposit.html");
 })
 
+app.get("/testings", (req, res) => {
+  res.sendFile(__dirname + "/Tester.html");
+})
+
