@@ -11,6 +11,8 @@ const authRoutes = require("./routes/auth")
 const userRoutes = require("./routes/user")
 const tournamentRoutes = require("./routes/tournament")
 const subscriptionRoutes = require("./routes/TestingSubscriptions")
+const ADS = require("./routes/Admob")
+
 app.use(express.json());
 // app.use(cors({
 //   origin: true,
@@ -38,6 +40,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/tournament', tournamentRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/admob',ADS);
+
 app.get("/testing", (req, res) => {
   res.sendFile(__dirname + "/testingpayement.html");
 })
@@ -47,8 +51,12 @@ app.get("/payements", (req, res) => {
 app.get("/deposit", (req, res) => {
   res.sendFile(__dirname + "/manual-deposit.html");
 })
-
 app.get("/testings", (req, res) => {
   res.sendFile(__dirname + "/Tester.html");
 })
-
+app.get("/testings", (req, res) => {
+  res.sendFile(__dirname + "/Tester.html");
+})
+app.get("/ad-testings", (req, res) => {
+  res.sendFile(__dirname + "/ADD.html");
+})

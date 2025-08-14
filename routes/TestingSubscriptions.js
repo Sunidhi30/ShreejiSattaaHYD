@@ -509,13 +509,11 @@ const Subscription = require('../models/Subscription'); // Adjust path as needed
 const Transaction = require('../models/Transaction'); // Adjust path as needed
 const jwt = require('jsonwebtoken');
 const router = express.Router();
-
 // Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY,
   key_secret: process.env.RAZORPAY_SECRET
 });
-
 // Middleware to verify JWT token
 const authMiddleware = async (req, res, next) => {
     try {
@@ -547,9 +545,8 @@ const authMiddleware = async (req, res, next) => {
       res.status(401).json({ message: 'Token is not valid' });
     }
 };
-
 // GET /api/subscriptions - Get all active subscription plans
-router.get('/', async (req, res) => {
+router.get('/active-subscriptions', async (req, res) => {
   try {
     const subscriptions = await Subscription.find({ isActive: true })
       .select('name description price duration features');
@@ -566,7 +563,6 @@ router.get('/', async (req, res) => {
     });
   }
 });
-
 // POST /api/subscriptions/create-order - Create Razorpay order
 router.post('/create-order', authMiddleware, async (req, res) => {
   try {
@@ -643,7 +639,6 @@ router.post('/create-order', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // POST /api/subscriptions/verify-payment - Verify payment and activate subscription
 // router.post("/verify-payment", authMiddleware, async (req, res) => {
 //     try {
@@ -956,7 +951,6 @@ router.get('/user', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // GET /api/subscriptions/transactions - Get subscription-related transactions
 router.get('/transactions', authMiddleware, async (req, res) => {
   try {
@@ -998,7 +992,6 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // POST /api/subscriptions/cancel - Cancel user subscription
 router.post('/cancel', authMiddleware, async (req, res) => {
   try {
@@ -1061,5 +1054,4 @@ router.post('/cancel', authMiddleware, async (req, res) => {
     });
   }
 });
-
 module.exports = router;

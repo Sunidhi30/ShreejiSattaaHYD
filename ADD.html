@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdMob Integration Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" crossorigin="anonymous"></script>
+  <style>
+    .ad-container {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px dashed #ccc;
+      text-align: center;
+    }
+    .ad-placeholder {
+      background-color: #f0f0f0;
+      padding: 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8">AdMob Integration Test</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Test Panel -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Test Ads</h2>
+        
+        <div class="mb-6">
+          <h3 class="font-medium mb-2">Banner Ad</h3>
+          <div id="banner-ad" class="ad-container">
+            <div class="ad-placeholder">Banner Ad will appear here</div>
+          </div>
+          <button onclick="loadAd('banner')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Load Banner Ad
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="font-medium mb-2">Interstitial Ad</h3>
+          <div class="ad-container">
+            <div class="ad-placeholder">Interstitial will show programmatically</div>
+          </div>
+          <button onclick="loadAd('interstitial')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            Show Interstitial
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="font-medium mb-2">Rewarded Ad</h3>
+          <div class="ad-container">
+            <div class="ad-placeholder">Rewarded ad button will appear here</div>
+          </div>
+          <button onclick="loadAd('rewarded')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+            Load Rewarded Ad
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="font-medium mb-2">Native Ad</h3>
+          <div id="native-ad" class="ad-container">
+            <div class="ad-placeholder">Native Ad will appear here</div>
+          </div>
+          <button onclick="loadAd('native')" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+            Load Native Ad
+          </button>
+        </div>
+      </div>
+      
+      <!-- API Test Panel -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">API Test Console</h2>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">API Endpoint</label>
+          <select id="api-endpoint" class="w-full p-2 border rounded">
+            <option value="/api/admob/active">GET /api/admob/active</option>
+            <option value="/api/admob">GET /api/admob (Admin)</option>
+            <option value="/api/admob">POST /api/admob (Admin)</option>
+            <option value="/api/admob/1/track">POST /api/admob/:id/track</option>
+            <option value="/api/admob/analytics/summary">GET /api/admob/analytics/summary</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Request Data (JSON)</label>
+          <textarea id="request-data" class="w-full p-2 border rounded h-24" placeholder='{"adType": "banner"}'>{"adType": "banner"}</textarea>
+        </div>
+        
+        <button onclick="testApi()" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 mb-4">
+          Test API
+        </button>
+        
+        <div>
+          <label class="block text-sm font-medium mb-1">Response</label>
+          <pre id="api-response" class="bg-gray-100 p-4 rounded overflow-auto max-h-64">Response will appear here</pre>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Admin Panel (simulated) -->
+    <div class="bg-white rounded-lg shadow p-6 mt-8">
+      <h2 class="text-xl font-semibold mb-4">Admin Panel Simulation</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <button onclick="simulateAdminAction('createTestAds')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Create Test Ads
+        </button>
+        <button onclick="simulateAdminAction('toggleAds')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+          Toggle All Ads
+        </button>
+        <button onclick="simulateAdminAction('resetAnalytics')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          Reset Analytics
+        </button>
+      </div>
+      
+      <div id="admin-message" class="text-sm text-gray-600"></div>
+    </div>
+  </div>
+
+  <script>
+    // Global ad state
+    const adState = {
+      banner: null,
+      interstitial: null,
+      rewarded: null,
+      native: null
+    };
+
+    // Load an ad of specific type
+    async function loadAd(adType) {
+      try {
+        // First fetch the ad config from backend
+        const response = await axios.get(`/api/admob/active?adType=${adType}`);
+        
+        if (response.data.success && response.data.data.length > 0) {
+          const adConfig = response.data.data[0];
+          adState[adType] = adConfig;
+          
+          // Track impression
+          await axios.post(`/api/admob/${adConfig._id}/track`, { type: 'impression' });
+          
+          // Render the ad based on type
+          renderAd(adType, adConfig);
+        } else {
+          alert(`No active ${adType} ads configured`);
+        }
+      } catch (error) {
+        console.error('Error loading ad:', error);
+        alert('Error loading ad. Check console for details.');
+      }
+    }
+
+    // Render the ad based on type
+    function renderAd(adType, adConfig) {
+      const [adClient, adSlot] = adConfig.publisherId.split('/');
+      
+      switch(adType) {
+        case 'banner':
+          const bannerContainer = document.getElementById('banner-ad');
+          bannerContainer.innerHTML = `
+            <ins class="adsbygoogle"
+              style="display:inline-block;width:320px;height:50px"
+              data-ad-client="${adClient}"
+              data-ad-slot="${adSlot}">
+            </ins>
+          `;
+          (adsbygoogle = window.adsbygoogle || []).push({});
+          break;
+          
+        case 'interstitial':
+          // Interstitial ads are typically shown automatically
+          alert('Interstitial ad will show after this alert closes');
+          (adsbygoogle = window.adsbygoogle || []).push({
+            params: {
+              ad_client: adClient,
+              ad_slot: adSlot
+            }
+          });
+          break;
+          
+        case 'rewarded':
+          const rewardedContainer = document.querySelector('#rewarded-ad + .ad-container');
+          rewardedContainer.innerHTML = `
+            <button onclick="showRewardedAd()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+              Watch Ad for Reward
+            </button>
+          `;
+          break;
+          
+        case 'native':
+          const nativeContainer = document.getElementById('native-ad');
+          nativeContainer.innerHTML = `
+            <ins class="adsbygoogle"
+              style="display:block"
+              data-ad-format="fluid"
+              data-ad-layout-key="-6t+ed+2i-1n-4w"
+              data-ad-client="${adClient}"
+              data-ad-slot="${adSlot}">
+            </ins>
+          `;
+          (adsbygoogle = window.adsbygoogle || []).push({});
+          break;
+      }
+    }
+
+    // Show rewarded ad (simplified)
+    async function showRewardedAd() {
+      if (!adState.rewarded) return;
+      
+      try {
+        // Track click
+        await axios.post(`/api/admob/${adState.rewarded._id}/track`, { type: 'click' });
+        
+        // Simulate rewarded ad completion
+        alert('Rewarded ad completed! Claim your reward.');
+      } catch (error) {
+        console.error('Error tracking rewarded ad:', error);
+      }
+    }
+
+    // Test API endpoints
+    async function testApi() {
+      const endpoint = document.getElementById('api-endpoint').value;
+      const requestData = document.getElementById('request-data').value;
+      
+      try {
+        const data = requestData ? JSON.parse(requestData) : {};
+        let response;
+        
+        if (endpoint.startsWith('POST')) {
+          response = await axios.post(endpoint, data);
+        } else {
+          response = await axios.get(endpoint, { params: data });
+        }
+        
+        document.getElementById('api-response').textContent = JSON.stringify(response.data, null, 2);
+      } catch (error) {
+        document.getElementById('api-response').textContent = `Error: ${error.message}\n${error.response?.data ? JSON.stringify(error.response.data, null, 2) : ''}`;
+      }
+    }
+
+    // Simulate admin actions
+    async function simulateAdminAction(action) {
+      const messageEl = document.getElementById('admin-message');
+      
+      try {
+        let response;
+        
+        switch(action) {
+          case 'createTestAds':
+            response = await axios.post('/api/admob', {
+              adType: 'banner',
+              publisherId: 'ca-app-pub-3940256099942544/6300978111',
+              adName: 'Test Banner',
+              placement: 'global'
+            });
+            
+            await axios.post('/api/admob', {
+              adType: 'interstitial',
+              publisherId: 'ca-app-pub-3940256099942544/1033173712',
+              adName: 'Test Interstitial',
+              placement: 'global',
+              frequency: 3
+            });
+            
+            await axios.post('/api/admob', {
+              adType: 'rewarded',
+              publisherId: 'ca-app-pub-3940256099942544/5224354917',
+              adName: 'Test Rewarded',
+              placement: 'global'
+            });
+            
+            await axios.post('/api/admob', {
+              adType: 'native',
+              publisherId: 'ca-app-pub-3940256099942544/2247696110',
+              adName: 'Test Native',
+              placement: 'global'
+            });
+            
+            messageEl.textContent = 'Test ads created successfully!';
+            break;
+            
+          case 'toggleAds':
+            // In a real app, you'd need to get ad IDs first
+            response = await axios.put('/api/admob/toggle-all');
+            messageEl.textContent = 'All ads toggled!';
+            break;
+            
+          case 'resetAnalytics':
+            response = await axios.post('/api/admob/reset-analytics');
+            messageEl.textContent = 'Analytics data reset!';
+            break;
+        }
+      } catch (error) {
+        messageEl.textContent = `Error: ${error.message}`;
+      }
+    }
+
+    // Initialize with some test data
+    document.addEventListener('DOMContentLoaded', () => {
+      // You might want to load some initial data here
+    });
+  </script>
+</body>
+</html>

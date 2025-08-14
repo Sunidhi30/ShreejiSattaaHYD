@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ad Display Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .ad-container {
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      position: relative;
+    }
+    
+    .ad-label {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #f0f0f0;
+      padding: 2px 6px;
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .ad-banner {
+      width: 728px;
+      height: 90px;
+    }
+    
+    .ad-interstitial {
+      width: 100%;
+      height: 600px;
+    }
+    
+    .ad-video {
+      width: 640px;
+      height: 360px;
+    }
+    
+    .ad-native {
+      width: 300px;
+      padding: 15px;
+      background: #f9f9f9;
+      display: flex;
+      align-items: center;
+    }
+    
+    .ad-native img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      margin-right: 15px;
+    }
+    
+    .ad-native-content {
+      flex: 1;
+    }
+    
+    .ad-native-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .ad-native-body {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 5px;
+    }
+    
+    .ad-native-cta {
+      color: #0066cc;
+      font-size: 12px;
+    }
+    
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    
+    select, button {
+      padding: 8px 12px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ad Display Test Page</h1>
+  
+  <div class="controls">
+    <label for="adType">Ad Type:</label>
+    <select id="adType">
+      <option value="banner">Banner</option>
+      <option value="interstitial">Interstitial</option>
+      <option value="video">Video</option>
+      <option value="native">Native</option>
+    </select>
+    
+    <label for="platform">Platform:</label>
+    <select id="platform">
+      <option value="web">Web</option>
+      <option value="android">Android</option>
+      <option value="ios">iOS</option>
+    </select>
+    
+    <button id="loadAd">Load Ad</button>
+  </div>
+  
+  <div id="adDisplay"></div>
+  
+  <script>
+    document.getElementById('loadAd').addEventListener('click', async () => {
+      const adType = document.getElementById('adType').value;
+      const platform = document.getElementById('platform').value;
+      
+      try {
+        const response = await fetch(`/api/ads?platform=${platform}&adType=${adType}`);
+        const { data: ads } = await response.json();
+        
+        const adDisplay = document.getElementById('adDisplay');
+        adDisplay.innerHTML = '';
+        
+        if (ads.length === 0) {
+          adDisplay.innerHTML = '<div class="ad-empty">No ads available</div>';
+          return;
+        }
+        
+        const ad = ads[0];
+        let adHtml = '';
+        
+        switch (ad.format) {
+          case 'image':
+            adHtml = `
+              <div class="ad-container ad-${ad.adType}">
+                <div class="ad-label">Advertisement</div>
+                <img src="${ad.content.mediaUrl}" alt="${ad.name}" 
+                     style="width: ${ad.width || '100%'}; height: ${ad.height || 'auto'}; cursor: pointer;">
+              </div>
+            `;
+            break;
+            
+          case 'video':
+            adHtml = `
+              <div class="ad-container ad-${ad.adType}">
+                <div class="ad-label">Advertisement</div>
+                <video controls autoplay muted loop 
+                       style="width: ${ad.width || '100%'}; height: ${ad.height || 'auto'}; cursor: pointer;">
+                  <source src="${ad.content.mediaUrl}" type="video/mp4">
+                </video>
+              </div>
+            `;
+            break;
+            
+          case 'html':
+            adHtml = `
+              <div class="ad-container ad-${ad.adType}">
+                <div class="ad-label">Advertisement</div>
+                <div>${ad.content.htmlContent}</div>
+              </div>
+            `;
+            break;
+            
+          case 'text':
+            adHtml = `
+              <div class="ad-container ad-${ad.adType}">
+                <div class="ad-label">Advertisement</div>
+                <div class="ad-text" style="cursor: pointer;">${ad.content.textContent}</div>
+              </div>
+            `;
+            break;
+        }
+        adDisplay.innerHTML = adHtml;
+        // Add click tracking
+        adDisplay.querySelector('.ad-container').addEventListener('click', () => {
+          window.open(ad.content.clickUrl, '_blank');
+          fetch(`/api/ads/${ad._id}/click`, { method: 'POST' });
+        });
+        
+      } catch (error) {
+        document.getElementById('adDisplay').innerHTML = `
+          <div class="ad-error">Error loading ad: ${error.message}</div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
