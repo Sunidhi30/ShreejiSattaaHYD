@@ -44,7 +44,7 @@ const adminMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const secret = process.env.JWT_SECRET || 'Apple';
     const decoded = jwt.verify(token, secret);
 
     const admin = await Admin.findById(decoded.adminId || decoded.userId);

@@ -9,7 +9,6 @@ const { adminAuth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 const cloudinary = require("../utils/cloudinary")
-// ============ TOURNAMENT ROUTES ============
 // GET /api/tournaments - Get all tournaments (Public)
 router.get('/tournaments', async (req, res) => {
   try {
@@ -137,7 +136,6 @@ router.delete('/:id', adminAuth, async (req, res) => {
     });
   }
 });
-// ============ MATCH ROUTES ============
 // GET /api/tournaments/:tournamentId/matches - Get matches for tournament
 router.get('/:tournamentId/matches', async (req, res) => {
   try {
@@ -277,7 +275,6 @@ router.put('/:tournamentId/matches/:matchId', adminAuth, async (req, res) => {
     });
   }
 });
-// ============ QUESTION ROUTES ============
 // GET /api/tournaments/:tournamentId/matches/:matchId/questions - Get questions for match
 router.get('/:tournamentId/matches/:matchId/questions', async (req, res) => {
   try {

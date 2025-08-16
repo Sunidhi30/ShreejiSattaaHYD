@@ -12,6 +12,7 @@ const Number = require("../models/Number")
 const AppSettings = require("../models/AppSettings")
 const upload= require("../utils/upload")
 const Subscription = require("../models/Subscription")
+const Transaction = require("../models/Transaction")
 const Blog = require("../models/Blog")
 const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
@@ -189,7 +190,7 @@ router.post('/blogs', adminAuth, upload.single('image'), async (req, res) => {
 router.put('/blogs/:id/top', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { isTop } = req.body; // true or false
+    const {  } = req.body; // true or false
 
     // Ensure only max 5 blogs can be top at the same time
     if (isTop) {
@@ -647,13 +648,6 @@ router.get('/users/:id', adminAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Get user's betting history
-    const bets = await Bet.find({ userId: user._id })
-      .populate('gameId', 'name')
-      .sort({ date: -1 })
-      .limit(10);
-
     // Get user's transaction history
     const transactions = await Transaction.find({ userId: user._id })
       .sort({ createdAt: -1 })
@@ -662,7 +656,6 @@ router.get('/users/:id', adminAuth, async (req, res) => {
     res.json({
       success: true,
       user,
-      recentBets: bets,
       recentTransactions: transactions
     });
   } catch (error) {
@@ -708,7 +701,6 @@ router.delete('/user/:userId', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-// // 7. TRANSACTION MANAGEMENT
 // // Get withdrawal requests
 router.get('/withdrawals', adminAuth, async (req, res) => {
   try {
@@ -741,6 +733,9 @@ router.get('/withdrawals', adminAuth, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+
+
 // // Process withdrawal
 // router.patch('/withdrawals/:id', adminAuth, async (req, res) => {
 //   try {

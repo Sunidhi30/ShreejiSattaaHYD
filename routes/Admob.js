@@ -1,11 +1,8 @@
-
 // routes/admob.js
 const express = require('express');
 const router = express.Router();
 const AdMob = require('../models/AdMob');
-// const { adminAuth } = require('../middleware/auth');
 const { adminAuth } = require('../middleware/auth');
-
 // GET /api/admob - Get all ads (Admin only)
 router.get('/', async (req, res) => {
   try {
